@@ -1,0 +1,24 @@
+{
+  "name": "casa-maiz-qa-automation",
+  "version": "1.0.0",
+  "description": "API/contract tests and Playwright browser tests for the public Payload CMS and the Casa Maiz web consumer.",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:web": "playwright test --project=web",
+    "report": "playwright show-report"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  }
+}
