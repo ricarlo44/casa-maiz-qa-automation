@@ -6,7 +6,7 @@ API and web automation repository" for the QA technical assessment; the
 React Native component/integration and mobile end-to-end work lives in the
 `payload-mobile-consumer` fork (see that repository's README).
 
-## Why one Playwright config, two projects
+## Test architecture: why one Playwright config, two projects
 
 Both the API checks and the browser checks are read-only, order-independent,
 and need the same reporting/tracing/CI story, so they run under a single
@@ -88,6 +88,35 @@ Highest-impact risks this suite targets, and why each sits at its layer:
 | The published site fails to load, navigate, or degrades unsafely when media is unavailable | Web E2E | Only observable by actually loading the page in a real browser engine |
 | The site is unusable/unreadable for low-vision users | Web E2E (axe) | Requires real rendered color/contrast computation, not obtainable from a JSON response |
 | Absolute vs. relative Payload media URLs both resolve correctly | API (unit, on the shared resolver) | The transformation is pure logic; today's live data only exercises the absolute-URL branch, so the relative-URL branch is verified directly rather than skipped |
+
+## Data strategy
+
+Two different data sources are used deliberately, and never mixed within
+one test:
+
+- **The live CMS and live site are the data source for every test that
+  claims to validate the real contract or the real page** (all of
+  `tests/api/*` and `tests/web/home.spec.ts` /
+  `tests/web/navigation.spec.ts` / `tests/web/accessibility.spec.ts`).
+  These tests build their own request parameters through
+  `src/api/query.ts`'s `buildQuery()` (which supports overriding or
+  deliberately *omitting* any of `platform`/`market`/`audience`/
+  `appVersion` per call -- see `context-validation.spec.ts`) and validate
+  the response through the `zod` schemas in `src/contracts/schemas.ts`
+  rather than asserting on specific editorial content, so they stay valid
+  as the CMS's content changes.
+- **Deterministic, synthetic data is used only where the point of the test
+  is the boundary logic itself, not the live network** -- the
+  `isSupportedContractVersion`/`envelopeSchema` forward-compatibility
+  checks in `contract-envelope.spec.ts` use hand-built envelope objects
+  (a live CMS cannot be asked to serve a breaking `2.0` on demand), the
+  cache-boundary checks in `targeting-cache.spec.ts` use fixed clock
+  values, and `degradation.spec.ts` uses Playwright's own network
+  interception (`page.route`) to force a deterministic failure without
+  touching the real CMS or site at all.
+
+No fixtures file is shared between the API and web projects; the only
+cross-repository reuse is the two small pure-logic ports described next.
 
 ## Contract reuse across mobile and web
 
